@@ -1,0 +1,31 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: mysql-hw-07
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: airflow
+      MYSQL_PASSWORD: airflow
+    volumes:
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysql", "-uairflow", "-pairflow", "-e", "SELECT 1 FROM olympic_dataset.athlete_event_results LIMIT 1"]
+      interval: 5s
+      retries: 30
+
+  airflow:
+    image: apache/airflow:2.10.5
+    container_name: airflow-hw-07
+    command: standalone
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW_CONN_GOIT_MYSQL_DB: mysql://airflow:airflow@mysql:3306/
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./webserver_config.py:/opt/airflow/webserver_config.py:ro
+    ports:
+      - "8080:8080"
